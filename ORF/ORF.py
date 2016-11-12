@@ -68,8 +68,11 @@ def findORF(seq, threshold,codeTable):
     """
     
     POS_D,POS_F,a=[],[],0
+    #Boucle pour les 3 frames
     for C in range(3):
+        #-(len(seq['data']-C)%3 c'est pour pas etre out of range
         for i in range(C,len(seq['data'])-(len(seq['data'])-C)%3,3):
+            #le a c'est un compteur pour avoir autant de start et stop
             if seq['data'][i:i+3]=='ATG' and a==0:
                 POS_D.append(i)
                 a=1
@@ -80,9 +83,11 @@ def findORF(seq, threshold,codeTable):
             POS_D.pop()
             a=0
     rev_seq=bio.complement_reverse(seq)
+    #meme chose pour les 3 autres frames
     for C in range(3):
         for i in range(C,len(rev_seq['data'])-(len(seq['data'])-C)%3,3):
             if rev_seq['data'][i:i+3]=='ATG' and a==0:
+                #positions notés en négatif
                 POS_D.append(-(len(rev_seq['data'])-i))
                 a=1
             if (rev_seq['data'][i:i+3]=='TAA' or rev_seq['data'][i:i+3]=='TAG' or rev_seq['data'][i:i+3]=='TGA') and a==1:
@@ -91,6 +96,8 @@ def findORF(seq, threshold,codeTable):
         if a==1:
             POS_D.pop()
             a=0
+
+    #application du seuil, seul les orf assez long iront dans les nouvelles listes.
     newD,newF=[],[]
     for i in range(len(POS_D)-1):
         if POS_F[i]-POS_D[i] > threshold:
@@ -98,12 +105,15 @@ def findORF(seq, threshold,codeTable):
             newF.append(POS_F[i])
     listORFs=[]
     for i in range(len(newD)):
+        #remplissage du dico, start, stop, frame, longueur, proteine traduite
         listORFs.append({'start':abs(newD[i])+1,'stop':abs(newF[i]),'frame':'','length':newF[i]-newD[i],'protein':''})
+        #boucle pour completer ['frame']
         for C in range(3):
             if newF[i]%3==C and newF[i]>=0:
                 listORFs[i]['frame']=C+1
             if newF[i]%3==C and newF[i]<0:
                 listORFs[i]['frame']=-C-1
+        #Completion de la proteine
         orf=seq['data'][newD[i]:newF[i]]
         listORFs[i]['protein']=translate(orf,codeTable)
     return listORFs
